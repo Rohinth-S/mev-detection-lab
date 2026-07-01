@@ -76,3 +76,11 @@ A real Ethereum receipt captured at block 26,486,702 was decoded and audited thr
 The nine-transaction synthetic archive exercises six positive detections and three controls with independent fixture labels. Detection quality on an external archive depends on available receipts, the address allowlist, and the labeling policy.
 
 ![Synthetic MEV audit label counts and confusion matrix](docs/demo-results.png)
+
+## Commit dates
+
+Both Git date fields on the 40 commits in the November 2026 portfolio update
+use retrospectively assigned milestones from 2026-07-01 through 2026-08-31,
+the project period listed in the résumé. Each commit records its assigned date
+in the Project-Milestone trailer and its original committer timestamp in
+the Original-Commit-Date trailer. Use git log --format=fuller to inspect the dates.
