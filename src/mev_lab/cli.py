@@ -5,6 +5,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from . import __version__
+
 from pydantic import TypeAdapter
 
 from .archive import Archive, Economics, ReceiptBundle, Truth
@@ -30,6 +32,7 @@ def main() -> None:
     parser.add_argument("--write-input", type=Path, help="export normalized input")
     parser.add_argument("--min-confidence", type=float, default=0.7)
     parser.add_argument("--window-blocks", type=int, default=20)
+    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     args = parser.parse_args()
 
     try:
