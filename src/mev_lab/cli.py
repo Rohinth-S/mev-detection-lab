@@ -8,6 +8,7 @@ from pathlib import Path
 from .artifacts import write_text_atomic
 
 from . import __version__
+from .artifacts import require_distinct_paths
 
 from pydantic import TypeAdapter
 
@@ -37,6 +38,14 @@ def main() -> None:
     args = parser.parse_args()
 
     try:
+        require_distinct_paths(
+            archive=args.input,
+            raw_receipts=args.receipts,
+            truth=args.truth,
+            benchmarks=args.economics,
+            report=args.output,
+            normalized_output=args.write_input,
+        )
         truth, economics = [], []
         source = args.input or args.receipts
         if source:
