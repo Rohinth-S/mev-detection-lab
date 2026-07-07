@@ -69,6 +69,7 @@ def main() -> None:
             window_blocks=args.window_blocks,
         )
         report["source"] = provenance
+        report["producer"] = {"name": "mev-detection-lab", "version": __version__, "format_version": 1}
         payload = json.dumps(report, indent=2, allow_nan=False) + "\n"
         _write(args.write_input, archive.model_dump_json(indent=2) + "\n")
         _write(args.output, payload)
