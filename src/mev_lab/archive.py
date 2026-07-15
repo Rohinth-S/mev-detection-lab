@@ -8,7 +8,8 @@ Address = Annotated[str, StringConstraints(to_lower=True, pattern=r"^0x[0-9a-fA-
 Hash = Annotated[str, StringConstraints(to_lower=True, pattern=r"^0x[0-9a-fA-F]{64}$")]
 Number = Annotated[float, Field(allow_inf_nan=False)]
 Positive = Annotated[float, Field(gt=0, allow_inf_nan=False)]
-Ordinal = Annotated[int, Field(ge=0)]
+Ordinal = Annotated[int, Field(ge=0, le=2**64 - 1)]
+Uint256 = Annotated[int, Field(ge=0, le=2**256 - 1)]
 Label = Literal["other", "arbitrage", "backrun", "liquidation", "sandwich"]
 
 
@@ -38,7 +39,7 @@ class MinedTransaction(Contract):
     tx_hash: Hash
     sender: Address
     gas_used: Ordinal
-    effective_gas_price_wei: Ordinal
+    effective_gas_price_wei: Uint256
     success: bool = True
     liquidation_events: Ordinal = 0
     swaps: list[Swap] = Field(default_factory=list)
