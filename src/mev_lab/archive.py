@@ -57,7 +57,7 @@ class MinedTransaction(Contract):
 class Archive(Contract):
     chain_id: Annotated[int, Field(gt=0)]
     transactions: list[MinedTransaction] = Field(min_length=1)
-    native_usd_by_block: dict[int, Positive] = Field(default_factory=dict)
+    native_usd_by_block: dict[Ordinal, Positive] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def validate_block_identity(self) -> "Archive":
@@ -113,5 +113,5 @@ class ReceiptBundle(Contract):
     chain_id: Annotated[int, Field(gt=0)]
     uniswap_v3_pools: list[Pool] = Field(default_factory=list)
     aave_v3_pools: list[Address] = Field(default_factory=list)
-    native_usd_by_block: dict[int, Positive] = Field(default_factory=dict)
+    native_usd_by_block: dict[Ordinal, Positive] = Field(default_factory=dict)
     receipts: list[dict] = Field(min_length=1)
