@@ -62,11 +62,14 @@ class Archive(Contract):
     @model_validator(mode="after")
     def validate_block_identity(self) -> "Archive":
         hashes: dict[int, str] = {}
+        heights_by_hash: dict[str, int] = {}
         positions = set()
         tx_hashes = set()
         for tx in self.transactions:
             if hashes.setdefault(tx.block, tx.block_hash) != tx.block_hash:
                 raise ValueError("archive mixes different block hashes at one height")
+            if heights_by_hash.setdefault(tx.block_hash, tx.block) != tx.block:
+                raise ValueError("one block hash cannot identify multiple block heights")
             key = (tx.block, tx.index)
             if key in positions or tx.tx_hash in tx_hashes:
                 raise ValueError("archive contains duplicate transaction identity or ordering position")
