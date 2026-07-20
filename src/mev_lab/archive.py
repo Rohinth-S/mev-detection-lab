@@ -65,6 +65,7 @@ class Archive(Contract):
         heights_by_hash: dict[str, int] = {}
         positions = set()
         tx_hashes = set()
+        swap_positions = set()
         for tx in self.transactions:
             if hashes.setdefault(tx.block, tx.block_hash) != tx.block_hash:
                 raise ValueError("archive mixes different block hashes at one height")
@@ -75,6 +76,11 @@ class Archive(Contract):
                 raise ValueError("archive contains duplicate transaction identity or ordering position")
             positions.add(key)
             tx_hashes.add(tx.tx_hash)
+            for swap in tx.swaps:
+                position = (tx.block, swap.log_index)
+                if position in swap_positions:
+                    raise ValueError("archive contains duplicate decoded log positions in one block")
+                swap_positions.add(position)
         return self
 
 
