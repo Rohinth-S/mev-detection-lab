@@ -46,7 +46,10 @@ def _swap(pool: Pool, log: dict) -> Swap | None:
 def decode_receipts(bundle: ReceiptBundle) -> Archive:
     pools = {pool.address: pool for pool in bundle.uniswap_v3_pools}
     lending = set(bundle.aave_v3_pools)
-    if len(pools) != len(bundle.uniswap_v3_pools) or pools.keys() & lending:
+    if (
+        len(pools) != len(bundle.uniswap_v3_pools) or len(lending) != len(bundle.aave_v3_pools)
+        or pools.keys() & lending
+    ):
         raise ValueError("contract addresses must be unique across protocol mappings")
     transactions = []
     for receipt in bundle.receipts:
