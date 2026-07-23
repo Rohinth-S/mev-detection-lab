@@ -15,8 +15,8 @@ CODEC = Web3().codec
 
 
 def _quantity(value: str) -> int:
-    if not isinstance(value, str) or not re.fullmatch(r"0x[0-9a-fA-F]+", value):
-        raise ValueError("receipt quantity must be hex")
+    if not isinstance(value, str) or not re.fullmatch(r"0x(?:0|[1-9a-fA-F][0-9a-fA-F]{0,63})", value):
+        raise ValueError("receipt quantity must be canonical hexadecimal")
     return int(value, 16)
 
 
