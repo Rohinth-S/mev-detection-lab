@@ -29,6 +29,11 @@ def _decode(types: list[str], data: str) -> tuple:
         raise ValueError("invalid ABI log data") from exc
 
 
+def _validate_topics(topics: list[str], count: int) -> None:
+    if len(topics) != count or any(not re.fullmatch(r"0x[0-9a-f]{64}", topic) for topic in topics):
+        raise ValueError("invalid indexed topic words")
+
+
 def _swap(pool: Pool, log: dict) -> Swap | None:
     amount0, amount1, _, _, _ = _decode(["int256", "int256", "uint160", "uint128", "int24"], log["data"])
     if amount0 > 0 and amount1 < 0:
@@ -67,13 +72,19 @@ def decode_receipts(bundle: ReceiptBundle) -> Archive:
                 if not topics:
                     continue
                 if address in pools and topics[0] == SWAP_TOPIC:
-                    if log.get("removed") or len(topics) != 3:
+                    if log.get("removed"):
+                        raise ValueError("removed Uniswap Swap log")
+                    _validate_topics(topics, 3)
+                    if not status:
                         raise ValueError("invalid Uniswap Swap log")
                     swap = _swap(pools[address], log)
                     if swap is not None:
                         swaps.append(swap)
                 elif address in lending and topics[0] == LIQUIDATION_TOPIC:
-                    if log.get("removed") or len(topics) != 4:
+                    if log.get("removed"):
+                        raise ValueError("removed Aave LiquidationCall log")
+                    _validate_topics(topics, 4)
+                    if not status:
                         raise ValueError("invalid Aave LiquidationCall log")
                     _decode(["uint256", "uint256", "address", "bool"], log["data"])
                     liquidations += 1
