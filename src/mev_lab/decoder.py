@@ -48,6 +48,15 @@ def _swap(pool: Pool, log: dict) -> Swap | None:
     )
 
 
+def _check_log_identity(receipt: dict, log: dict) -> None:
+    for field in ("blockHash", "transactionHash"):
+        if field in log and log[field].lower() != receipt[field].lower():
+            raise ValueError(f"log {field} disagrees with its receipt")
+    for field in ("blockNumber", "transactionIndex"):
+        if field in log and _quantity(log[field]) != _quantity(receipt[field]):
+            raise ValueError(f"log {field} disagrees with its receipt")
+
+
 def decode_receipts(bundle: ReceiptBundle) -> Archive:
     pools = {pool.address: pool for pool in bundle.uniswap_v3_pools}
     lending = set(bundle.aave_v3_pools)
@@ -67,6 +76,7 @@ def decode_receipts(bundle: ReceiptBundle) -> Archive:
             swaps = []
             liquidations = 0
             for log in receipt["logs"]:
+                _check_log_identity(receipt, log)
                 address = log["address"].lower()
                 topics = [topic.lower() for topic in log["topics"]]
                 if not topics:
