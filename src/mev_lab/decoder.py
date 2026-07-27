@@ -103,7 +103,7 @@ def decode_receipts(bundle: ReceiptBundle) -> Archive:
                 index=_quantity(receipt["transactionIndex"]), tx_hash=receipt["transactionHash"],
                 sender=receipt["from"], success=bool(status),
                 gas_used=_quantity(receipt["gasUsed"]), effective_gas_price_wei=_quantity(receipt["effectiveGasPrice"]),
-                swaps=swaps, liquidation_events=liquidations,
+                swaps=sorted(swaps, key=lambda swap: swap.log_index), liquidation_events=liquidations,
             ))
         except (KeyError, TypeError, AttributeError) as exc:
             raise ValueError("receipt is missing a required JSON-RPC field") from exc
