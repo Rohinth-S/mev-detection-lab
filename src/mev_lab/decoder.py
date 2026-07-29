@@ -37,14 +37,17 @@ def _validate_topics(topics: list[str], count: int) -> None:
 def _swap(pool: Pool, log: dict) -> Swap | None:
     amount0, amount1, _, _, _ = _decode(["int256", "int256", "uint160", "uint128", "int24"], log["data"])
     if amount0 > 0 and amount1 < 0:
+        amount_in_raw, amount_out_raw = amount0, -amount1
         values = (pool.token0, pool.token1, amount0 / 10**pool.decimals0, -amount1 / 10**pool.decimals1)
     elif amount1 > 0 and amount0 < 0:
+        amount_in_raw, amount_out_raw = amount1, -amount0
         values = (pool.token1, pool.token0, amount1 / 10**pool.decimals1, -amount0 / 10**pool.decimals0)
     else:
         return None
     return Swap(
         log_index=_quantity(log["logIndex"]), pool=pool.address, token_in=values[0], token_out=values[1],
         amount_in=values[2], amount_out=values[3],
+        amount_in_raw=str(amount_in_raw), amount_out_raw=str(amount_out_raw),
     )
 
 

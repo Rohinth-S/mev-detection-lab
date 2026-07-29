@@ -24,6 +24,8 @@ class Swap(Contract):
     token_out: Address
     amount_in: Positive
     amount_out: Positive
+    amount_in_raw: Annotated[str, Field(pattern=r"^[1-9][0-9]{0,77}$")] | None = None
+    amount_out_raw: Annotated[str, Field(pattern=r"^[1-9][0-9]{0,77}$")] | None = None
 
     @model_validator(mode="after")
     def require_distinct_tokens(self) -> "Swap":
