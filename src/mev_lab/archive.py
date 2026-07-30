@@ -44,7 +44,7 @@ class MinedTransaction(Contract):
     effective_gas_price_wei: Uint256
     success: bool = True
     liquidation_events: Ordinal = 0
-    swaps: list[Swap] = Field(default_factory=list)
+    swaps: list[Swap] = Field(default_factory=list, max_length=4_096)
 
     @model_validator(mode="after")
     def validate_events(self) -> "MinedTransaction":
@@ -58,7 +58,7 @@ class MinedTransaction(Contract):
 
 class Archive(Contract):
     chain_id: Annotated[int, Field(gt=0)]
-    transactions: list[MinedTransaction] = Field(min_length=1)
+    transactions: list[MinedTransaction] = Field(min_length=1, max_length=200_000)
     native_usd_by_block: dict[Ordinal, Positive] = Field(default_factory=dict)
 
     @model_validator(mode="after")
@@ -125,4 +125,4 @@ class ReceiptBundle(Contract):
     uniswap_v3_pools: list[Pool] = Field(default_factory=list)
     aave_v3_pools: list[Address] = Field(default_factory=list)
     native_usd_by_block: dict[Ordinal, Positive] = Field(default_factory=dict)
-    receipts: list[dict] = Field(min_length=1)
+    receipts: list[dict] = Field(min_length=1, max_length=200_000)

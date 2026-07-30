@@ -78,6 +78,8 @@ def decode_receipts(bundle: ReceiptBundle) -> Archive:
                 raise ValueError("receipt status must be 0 or 1")
             swaps = []
             liquidations = 0
+            if not isinstance(receipt["logs"], list) or len(receipt["logs"]) > 20_000:
+                raise ValueError("receipt must supply an array of at most 20000 logs")
             for log in receipt["logs"]:
                 _check_log_identity(receipt, log)
                 address = log["address"].lower()
