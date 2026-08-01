@@ -112,4 +112,7 @@ def decode_receipts(bundle: ReceiptBundle) -> Archive:
             ))
         except (KeyError, TypeError, AttributeError) as exc:
             raise ValueError("receipt is missing a required JSON-RPC field") from exc
-    return Archive(chain_id=bundle.chain_id, transactions=transactions, native_usd_by_block=bundle.native_usd_by_block)
+    return Archive(
+        chain_id=bundle.chain_id, transactions=transactions, native_usd_by_block=bundle.native_usd_by_block,
+        transaction_counts_by_block=bundle.transaction_counts_by_block,
+    )

@@ -60,6 +60,7 @@ class Archive(Contract):
     chain_id: Annotated[int, Field(gt=0)]
     transactions: list[MinedTransaction] = Field(min_length=1, max_length=200_000)
     native_usd_by_block: dict[Ordinal, Positive] = Field(default_factory=dict)
+    transaction_counts_by_block: dict[Ordinal, Ordinal] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def validate_block_identity(self) -> "Archive":
@@ -74,6 +75,9 @@ class Archive(Contract):
             if heights_by_hash.setdefault(tx.block_hash, tx.block) != tx.block:
                 raise ValueError("one block hash cannot identify multiple block heights")
             key = (tx.block, tx.index)
+            declared_count = self.transaction_counts_by_block.get(tx.block)
+            if declared_count is not None and tx.index >= declared_count:
+                raise ValueError("captured index exceeds independently declared block coverage")
             if key in positions or tx.tx_hash in tx_hashes:
                 raise ValueError("archive contains duplicate transaction identity or ordering position")
             positions.add(key)
@@ -125,4 +129,5 @@ class ReceiptBundle(Contract):
     uniswap_v3_pools: list[Pool] = Field(default_factory=list)
     aave_v3_pools: list[Address] = Field(default_factory=list)
     native_usd_by_block: dict[Ordinal, Positive] = Field(default_factory=dict)
+    transaction_counts_by_block: dict[Ordinal, Ordinal] = Field(default_factory=dict)
     receipts: list[dict] = Field(min_length=1, max_length=200_000)
