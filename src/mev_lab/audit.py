@@ -100,9 +100,13 @@ def audit_archive(
     accounting = _annotate(economics, hashes)
     ordered = sorted(archive.transactions, key=lambda tx: (tx.block, tx.index))
     rows = []
+    coverage = []
     windows: dict[int, list[dict]] = defaultdict(list)
     for block_number, batch in groupby(ordered, key=lambda tx: tx.block):
         block = list(batch)
+        declared = archive.transaction_counts_by_block.get(block_number)
+        coverage_state = "unknown" if declared is None else "complete" if declared == len(block) else "partial"
+        coverage.append({"block": block_number, "declared": declared, "captured": len(block), "status": coverage_state})
         predictions = _block_predictions(block)
         for tx in block:
             raw_prediction, evidence = predictions[tx.tx_hash]
@@ -130,6 +134,7 @@ def audit_archive(
     return {
         "chain_id": archive.chain_id, "min_confidence": min_confidence, "window_blocks": window_blocks,
         "transactions": len(rows), "detections": sum(r["prediction"] != "other" for r in rows),
+        "block_coverage": coverage,
         "evaluation": score_labels(rows), "gas": _total(rows, "gas_usd"),
         "net_extraction": _total(rows, "net_extraction_usd"),
         "windows": [
