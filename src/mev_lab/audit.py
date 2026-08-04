@@ -113,7 +113,8 @@ def audit_archive(
             heuristic_score = confidence({"prediction": raw_prediction})
             suppressed = raw_prediction != "other" and heuristic_score < min_confidence
             native_usd = archive.native_usd_by_block.get(block_number)
-            native_gas = tx.gas_used * tx.effective_gas_price_wei / 10**18
+            native_gas_wei = tx.gas_used * tx.effective_gas_price_wei
+            native_gas = native_gas_wei / 10**18
             gas = native_gas * native_usd if native_usd is not None else None
             item = accounting.get(tx.tx_hash)
             gross = item.gross_extraction_usd if item else None
@@ -126,6 +127,7 @@ def audit_archive(
                 "prediction": "other" if suppressed else raw_prediction, "raw_prediction": raw_prediction,
                 "truth": labeled[tx.tx_hash].label if tx.tx_hash in labeled else None, "confidence": heuristic_score,
                 "evidence": evidence, "suppressed": suppressed, "gas_native": native_gas, "gas_usd": gas,
+                "receipt_success": tx.success, "gas_wei": str(native_gas_wei),
                 "gross_extraction_usd": gross, "net_extraction_usd": gross - gas if gross is not None and gas is not None else None,
                 "adverse_slippage_bps": slippage, "swap_events": len(tx.swaps),
             }
