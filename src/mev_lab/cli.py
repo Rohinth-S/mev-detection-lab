@@ -34,6 +34,7 @@ def main() -> None:
     parser.add_argument("--write-input", type=Path, help="export normalized input")
     parser.add_argument("--min-confidence", type=float, default=0.7)
     parser.add_argument("--window-blocks", type=int, default=20)
+    parser.add_argument("--require-complete-blocks", action="store_true")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     args = parser.parse_args()
 
@@ -66,7 +67,7 @@ def main() -> None:
             economics = TypeAdapter(list[Economics]).validate_json(args.economics.read_bytes())
         report = audit_archive(
             archive, truth=truth, economics=economics, min_confidence=args.min_confidence,
-            window_blocks=args.window_blocks,
+            window_blocks=args.window_blocks, require_complete_blocks=args.require_complete_blocks,
         )
         report["source"] = provenance
         report["producer"] = {"name": "mev-detection-lab", "version": __version__, "format_version": 1}

@@ -91,7 +91,7 @@ def _total(rows: list[dict], key: str) -> dict:
 
 def audit_archive(
     archive: Archive, *, truth: Sequence[Truth] = (), economics: Sequence[Economics] = (),
-    min_confidence: float = 0.7, window_blocks: int = 20,
+    min_confidence: float = 0.7, window_blocks: int = 20, require_complete_blocks: bool = False,
 ) -> dict:
     if not 0 <= min_confidence <= 1 or window_blocks < 1:
         raise ValueError("confidence must be in [0, 1] and block window must be positive")
@@ -111,7 +111,9 @@ def audit_archive(
         for tx in block:
             raw_prediction, evidence = predictions[tx.tx_hash]
             heuristic_score = confidence({"prediction": raw_prediction})
-            suppressed = raw_prediction != "other" and heuristic_score < min_confidence
+            ordering_label = raw_prediction in {"arbitrage", "backrun", "sandwich"}
+            missing_context = require_complete_blocks and ordering_label and coverage_state != "complete"
+            suppressed = raw_prediction != "other" and (missing_context or heuristic_score < min_confidence)
             native_usd = archive.native_usd_by_block.get(block_number)
             native_gas_wei = tx.gas_used * tx.effective_gas_price_wei
             native_gas = native_gas_wei / 10**18
