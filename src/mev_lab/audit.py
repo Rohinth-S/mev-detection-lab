@@ -130,6 +130,8 @@ def audit_archive(
                 "truth": labeled[tx.tx_hash].label if tx.tx_hash in labeled else None, "confidence": heuristic_score,
                 "evidence": evidence, "suppressed": suppressed, "gas_native": native_gas, "gas_usd": gas,
                 "receipt_success": tx.success, "gas_wei": str(native_gas_wei),
+                "block_coverage": coverage_state,
+                "suppression_reason": "incomplete_capture" if missing_context else "confidence_floor" if suppressed else None,
                 "gross_extraction_usd": gross, "net_extraction_usd": gross - gas if gross is not None and gas is not None else None,
                 "adverse_slippage_bps": slippage, "swap_events": len(tx.swaps),
             }
@@ -139,6 +141,8 @@ def audit_archive(
         "chain_id": archive.chain_id, "min_confidence": min_confidence, "window_blocks": window_blocks,
         "transactions": len(rows), "detections": sum(r["prediction"] != "other" for r in rows),
         "block_coverage": coverage,
+        "require_complete_blocks": require_complete_blocks,
+        "suppression_reasons": dict(Counter(row["suppression_reason"] for row in rows if row["suppressed"])),
         "evaluation": score_labels(rows), "gas": _total(rows, "gas_usd"),
         "net_extraction": _total(rows, "net_extraction_usd"),
         "windows": [
