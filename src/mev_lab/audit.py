@@ -149,6 +149,8 @@ def audit_archive(
             {
                 "start_block": start, "end_block": start + window_blocks - 1,
                 "transactions": len(subset), "labels": dict(Counter(row["prediction"] for row in subset)),
+                "labeled_transactions": sum(row["truth"] is not None for row in subset),
+                "label_disagreements": sum(row["truth"] is not None and row["truth"] != row["prediction"] for row in subset),
                 "suppressed": sum(row["suppressed"] for row in subset), "gas": _total(subset, "gas_usd"),
             }
             for start, subset in sorted(windows.items())
