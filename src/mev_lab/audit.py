@@ -72,6 +72,7 @@ def score_labels(rows: list[dict]) -> dict:
         recall = tp / actual if actual else None
         metrics[label] = {
             "support": actual, "predicted": predicted, "precision": precision, "recall": recall,
+            "true_positives": tp, "false_positives": predicted - tp, "false_negatives": actual - tp,
             "f1": 2 * tp / (actual + predicted) if actual + predicted else None,
         }
     return {
