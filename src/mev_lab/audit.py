@@ -3,6 +3,7 @@
 from collections import Counter, defaultdict
 from collections.abc import Sequence
 from itertools import groupby
+from statistics import mean, median
 from typing import TypeVar
 
 from .archive import Archive, Economics, MinedTransaction, Swap, Truth
@@ -75,7 +76,9 @@ def score_labels(rows: list[dict]) -> dict:
             "true_positives": tp, "false_positives": predicted - tp, "false_negatives": actual - tp,
             "f1": 2 * tp / (actual + predicted) if actual + predicted else None,
         }
+    positive_f1 = [row["f1"] for label, row in metrics.items() if label != "other" and row["f1"] is not None]
     return {
+        "macro_positive_f1": mean(positive_f1) if positive_f1 else None,
         "scored_transactions": len(labeled), "accuracy": (
             sum(matrix[label][label] for label in LABELS) / len(labeled) if labeled else None
         ),
