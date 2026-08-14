@@ -93,6 +93,15 @@ def _total(rows: list[dict], key: str) -> dict:
     return {"observations": len(values), "total_usd": sum(values) if values else None}
 
 
+def _slippage_summary(rows: list[dict]) -> dict:
+    samples = [row["adverse_slippage_bps"] for row in rows if row["adverse_slippage_bps"] is not None]
+    return {
+        "observations": len(samples),
+        "median_bps": median(samples) if samples else None,
+        "worst_adverse_bps": max(samples) if samples else None,
+    }
+
+
 def audit_archive(
     archive: Archive, *, truth: Sequence[Truth] = (), economics: Sequence[Economics] = (),
     min_confidence: float = 0.7, window_blocks: int = 20, require_complete_blocks: bool = False,
@@ -149,6 +158,7 @@ def audit_archive(
         "suppression_reasons": dict(Counter(row["suppression_reason"] for row in rows if row["suppressed"])),
         "evaluation": score_labels(rows), "gas": _total(rows, "gas_usd"),
         "net_extraction": _total(rows, "net_extraction_usd"),
+        "execution_slippage": _slippage_summary(rows),
         "windows": [
             {
                 "start_block": start, "end_block": start + window_blocks - 1,
