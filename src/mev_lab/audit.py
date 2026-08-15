@@ -157,6 +157,10 @@ def audit_archive(
         "require_complete_blocks": require_complete_blocks,
         "suppression_reasons": dict(Counter(row["suppression_reason"] for row in rows if row["suppressed"])),
         "evaluation": score_labels(rows), "gas": _total(rows, "gas_usd"),
+        "gas_by_receipt_outcome": {
+            outcome: _total([row for row in rows if row["receipt_success"] == successful], "gas_usd")
+            for outcome, successful in (("successful", True), ("failed", False))
+        },
         "net_extraction": _total(rows, "net_extraction_usd"),
         "execution_slippage": _slippage_summary(rows),
         "windows": [
