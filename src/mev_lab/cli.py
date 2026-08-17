@@ -1,8 +1,10 @@
 """Audit normalized archived transactions or a saved receipt bundle."""
 
 import argparse
+import csv
 import hashlib
 import json
+from io import StringIO
 from pathlib import Path
 
 from .artifacts import write_text_atomic
@@ -31,6 +33,7 @@ def main() -> None:
     parser.add_argument("--truth", type=Path, help="independent transaction labels as JSON")
     parser.add_argument("--economics", type=Path, help="independent USD benchmarks as JSON")
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--ledger-csv", type=Path)
     parser.add_argument("--write-input", type=Path, help="export normalized input")
     parser.add_argument("--min-confidence", type=float, default=0.7)
     parser.add_argument("--window-blocks", type=int, default=20)
@@ -45,6 +48,7 @@ def main() -> None:
             truth=args.truth,
             benchmarks=args.economics,
             report=args.output,
+            ledger=args.ledger_csv,
             normalized_output=args.write_input,
         )
         truth, economics = [], []
@@ -72,6 +76,12 @@ def main() -> None:
         report["source"] = provenance
         report["producer"] = {"name": "mev-detection-lab", "version": __version__, "format_version": 1}
         payload = json.dumps(report, indent=2, allow_nan=False) + "\n"
+        if args.ledger_csv:
+            buffer = StringIO(newline="")
+            writer = csv.DictWriter(buffer, fieldnames=list(report["rows"][0]), lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(report["rows"])
+            write_text_atomic(args.ledger_csv, buffer.getvalue())
         _write(args.write_input, archive.model_dump_json(indent=2) + "\n")
         _write(args.output, payload)
     except (OSError, ValueError) as exc:
