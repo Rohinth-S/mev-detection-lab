@@ -66,9 +66,13 @@ def main() -> None:
             archive, truth, economics = demo_archive()
             provenance = {"kind": "synthetic"}
         if args.truth:
-            truth = TypeAdapter(list[Truth]).validate_json(args.truth.read_bytes())
+            raw = args.truth.read_bytes()
+            truth = TypeAdapter(list[Truth]).validate_json(raw)
+            provenance["truth_sha256"] = hashlib.sha256(raw).hexdigest()
         if args.economics:
-            economics = TypeAdapter(list[Economics]).validate_json(args.economics.read_bytes())
+            raw = args.economics.read_bytes()
+            economics = TypeAdapter(list[Economics]).validate_json(raw)
+            provenance["economics_sha256"] = hashlib.sha256(raw).hexdigest()
         report = audit_archive(
             archive, truth=truth, economics=economics, min_confidence=args.min_confidence,
             window_blocks=args.window_blocks, require_complete_blocks=args.require_complete_blocks,
