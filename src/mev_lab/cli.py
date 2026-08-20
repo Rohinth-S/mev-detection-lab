@@ -35,6 +35,8 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--ledger-csv", type=Path)
     parser.add_argument("--write-input", type=Path, help="export normalized input")
+    parser.add_argument("--write-truth", type=Path)
+    parser.add_argument("--write-economics", type=Path)
     parser.add_argument("--min-confidence", type=float, default=0.7)
     parser.add_argument("--window-blocks", type=int, default=20)
     parser.add_argument("--require-complete-blocks", action="store_true")
@@ -50,6 +52,8 @@ def main() -> None:
             report=args.output,
             ledger=args.ledger_csv,
             normalized_output=args.write_input,
+            truth_output=args.write_truth,
+            benchmark_output=args.write_economics,
         )
         truth, economics = [], []
         source = args.input or args.receipts
@@ -87,6 +91,10 @@ def main() -> None:
             writer.writerows(report["rows"])
             write_text_atomic(args.ledger_csv, buffer.getvalue())
         _write(args.write_input, archive.model_dump_json(indent=2) + "\n")
+        if args.write_truth:
+            _write(args.write_truth, TypeAdapter(list[Truth]).dump_json(truth, indent=2).decode() + "\n")
+        if args.write_economics:
+            _write(args.write_economics, TypeAdapter(list[Economics]).dump_json(economics, indent=2).decode() + "\n")
         _write(args.output, payload)
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
