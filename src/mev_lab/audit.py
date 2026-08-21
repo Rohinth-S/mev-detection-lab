@@ -147,12 +147,15 @@ def audit_archive(
                 "suppression_reason": "incomplete_capture" if missing_context else "confidence_floor" if suppressed else None,
                 "gross_extraction_usd": gross, "net_extraction_usd": gross - gas if gross is not None and gas is not None else None,
                 "adverse_slippage_bps": slippage, "swap_events": len(tx.swaps),
+                "unique_swap_pools": len({swap.pool for swap in tx.swaps}), "liquidation_events": tx.liquidation_events,
             }
             rows.append(row)
             windows[(block_number // window_blocks) * window_blocks].append(row)
     return {
         "chain_id": archive.chain_id, "min_confidence": min_confidence, "window_blocks": window_blocks,
         "transactions": len(rows), "detections": sum(r["prediction"] != "other" for r in rows),
+        "captured_swap_events": sum(row["swap_events"] for row in rows),
+        "captured_liquidation_events": sum(row["liquidation_events"] for row in rows),
         "block_coverage": coverage,
         "require_complete_blocks": require_complete_blocks,
         "suppression_reasons": dict(Counter(row["suppression_reason"] for row in rows if row["suppressed"])),
