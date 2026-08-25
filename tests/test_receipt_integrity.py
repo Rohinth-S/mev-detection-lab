@@ -33,3 +33,9 @@ def test_decoder_rejects_mismatched_identity_and_topic_width():
     capture.receipts[0]["logs"][0]["topics"][-1] = "0x00"
     with pytest.raises(ValueError, match="indexed topic"):
         decode_receipts(capture)
+
+def test_exact_abi_quantities_survive_the_normalized_archive():
+    captured = decode_receipts(_wire())
+    first = captured.transactions[0].swaps[0]
+    assert first.amount_in_raw == str(10**19 + 1) and first.amount_out_raw == str(10**19 + 3)
+    assert audit_archive(captured)["rows"][0]["gas_wei"] == "21000"
