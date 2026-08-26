@@ -39,3 +39,13 @@ def test_exact_abi_quantities_survive_the_normalized_archive():
     first = captured.transactions[0].swaps[0]
     assert first.amount_in_raw == str(10**19 + 1) and first.amount_out_raw == str(10**19 + 3)
     assert audit_archive(captured)["rows"][0]["gas_wei"] == "21000"
+
+def test_declared_coverage_limits_ordering_candidates_and_keeps_protocol_events():
+    original, truth, _ = demo_archive()
+    data = original.model_dump()
+    data["transaction_counts_by_block"] = {100: 4, 110: 3}
+    report = audit_archive(Archive.model_validate(data), truth=truth, require_complete_blocks=True)
+    assert [row["status"] for row in report["block_coverage"]] == ["partial", "complete", "unknown"]
+    assert report["suppression_reasons"]["incomplete_capture"] == 4
+    assert report["captured_liquidation_events"] == 1
+    assert report["evaluation"]["macro_positive_f1"] is not None
