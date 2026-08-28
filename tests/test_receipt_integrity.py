@@ -49,3 +49,11 @@ def test_declared_coverage_limits_ordering_candidates_and_keeps_protocol_events(
     assert report["suppression_reasons"]["incomplete_capture"] == 4
     assert report["captured_liquidation_events"] == 1
     assert report["evaluation"]["macro_positive_f1"] is not None
+
+def test_economic_summary_keeps_unpriced_gas_separate():
+    captured, _, economic = demo_archive()
+    report = audit_archive(captured, economics=economic)
+    assert report["execution_slippage"]["observations"] == 1
+    assert report["execution_slippage"]["median_bps"] == pytest.approx(50)
+    assert report["gas_by_receipt_outcome"]["successful"]["observations"] == 6
+    assert report["gas_by_receipt_outcome"]["failed"]["total_usd"] is None
