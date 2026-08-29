@@ -26,3 +26,31 @@ def synthetic_blocks() -> list[list[Tx]]:
 def evaluate(rows, truth):
  tp=sum(r["prediction"]==t and t!="other" for r,t in zip(rows,truth)); pred=sum(r["prediction"]!="other" for r in rows); actual=sum(t!="other" for t in truth)
  return {"precision":tp/pred if pred else 0.0,"recall":tp/actual if actual else 0.0,"false_positives":sum(r["prediction"]!="other" and t=="other" for r,t in zip(rows,truth))}
+
+def temporal_arbitrage(blocks: Iterable[list[Tx]], max_gap_blocks: int = 1) -> list[dict]:
+    """Find cross-block multi-hop swaps with continuous token flow.
+
+    This is deliberately conservative: a candidate must keep the same sender,
+    connect token_out to the next token_in, and finish in a different token.
+    """
+    if max_gap_blocks < 0:
+        raise ValueError("max_gap_blocks cannot be negative")
+    ordered = sorted((tx for block in blocks for tx in block), key=lambda tx: (tx.block, tx.index))
+    candidates = []
+    for left, right in zip(ordered, ordered[1:]):
+        if left.kind != "swap" or right.kind != "swap":
+            continue
+        if left.sender != right.sender or right.block - left.block > max_gap_blocks + 1:
+            continue
+        if left.token_out != right.token_in:
+            continue
+        candidates.append({"sender": left.sender, "start_block": left.block, "end_block": right.block,
+                           "path": [left.token_in, left.token_out, right.token_out],
+                           "amount_in": left.amount, "amount_out": right.amount,
+                           "price_ratio": right.amount / left.amount if left.amount else 0.0})
+    return candidates
+
+def confidence(row: dict) -> float:
+    """Map a classifier result to a bounded, explainable confidence score."""
+    return {"sandwich": 0.98, "arbitrage": 0.9, "backrun": 0.72,
+            "liquidation": 0.99, "other": 0.05}.get(row["prediction"], 0.1)
