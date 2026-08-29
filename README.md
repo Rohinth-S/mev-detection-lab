@@ -84,3 +84,16 @@ use retrospectively assigned milestones from 2026-07-01 through 2026-08-31,
 the project period listed in the résumé. Each commit records its assigned date
 in the Project-Milestone trailer and its original committer timestamp in
 the Original-Commit-Date trailer. Use git log --format=fuller to inspect the dates.
+
+## Coverage-aware audits
+
+Supply independently verified total transaction counts in
+`transaction_counts_by_block` to distinguish complete and partial block captures.
+`--require-complete-blocks` excludes ordering labels when coverage is partial or
+unknown. Direct protocol event labels remain visible. Per-row reasons explain
+whether the confidence floor or capture coverage suppressed an ordering label.
+
+Use `--ledger-csv` for a tabular audit and `--write-input`, `--write-truth`, and
+`--write-economics` to save separate replay inputs. Reports record the source
+fingerprints of supplied captures and annotations. ABI-derived integer token amounts and gas
+charges travel as strings to preserve precision.
