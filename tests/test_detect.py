@@ -10,5 +10,15 @@ def test_temporal_multi_hop_arbitrage():
  assert candidates[0]["path"]==["USDC","ETH","USDC"]
  assert candidates[0]["price_ratio"]==1.01
 
+def test_temporal_detector_chains_three_hops_and_enforces_gap():
+ candidates=temporal_arbitrage([
+     [Tx(10,0,"bot","p1","swap","USDC","ETH",100)],
+     [Tx(11,0,"bot","p2","swap","ETH","DAI",101)],
+     [Tx(12,0,"bot","p3","swap","DAI","USDC",102)],
+ ])
+ assert candidates[0]["hops"] == 3
+ assert candidates[0]["path"] == ["USDC","ETH","DAI","USDC"]
+ assert temporal_arbitrage([[Tx(10,0,"bot","p","swap","A","B",1)], [Tx(12,0,"bot","p","swap","B","A",1)]], max_gap_blocks=1) == []
+
 def test_confidence_is_bounded():
  assert 0 <= confidence({"prediction":"other"}) <= 1
