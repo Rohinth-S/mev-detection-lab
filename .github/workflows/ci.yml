@@ -28,6 +28,8 @@ jobs:
           python -m pip install "${wheels[0]}[test]"
       - run: python -m pytest -q
       - run: mev_detection_lab --output reports/ci.json
+      - run: mev_detection_lab --write-input reports/normalized.json --write-truth reports/truth.json --write-economics reports/economics.json
+      - run: mev_detection_lab --input reports/normalized.json --truth reports/truth.json --economics reports/economics.json --require-complete-blocks --ledger-csv reports/audit.csv --output reports/replayed.json
       - uses: actions/upload-artifact@v4
         with:
           name: demo-${{ matrix.os }}-${{ matrix.python }}

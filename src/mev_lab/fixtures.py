@@ -39,4 +39,5 @@ def demo_archive() -> tuple[Archive, list[Truth], list[Economics]]:
     ]
     return Archive(
         chain_id=1, transactions=rows, native_usd_by_block={100: 2_000, 110: 2_020},
+        transaction_counts_by_block={100: 3, 110: 3, 130: 3},
     ), truths, economics
