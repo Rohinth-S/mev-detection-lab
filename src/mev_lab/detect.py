@@ -37,17 +37,25 @@ def temporal_arbitrage(blocks: Iterable[list[Tx]], max_gap_blocks: int = 1) -> l
         raise ValueError("max_gap_blocks cannot be negative")
     ordered = sorted((tx for block in blocks for tx in block), key=lambda tx: (tx.block, tx.index))
     candidates = []
-    for left, right in zip(ordered, ordered[1:]):
-        if left.kind != "swap" or right.kind != "swap":
+    for start, left in enumerate(ordered):
+        if left.kind != "swap":
             continue
-        if left.sender != right.sender or right.block - left.block > max_gap_blocks + 1:
-            continue
-        if left.token_out != right.token_in:
-            continue
-        candidates.append({"sender": left.sender, "start_block": left.block, "end_block": right.block,
-                           "path": [left.token_in, left.token_out, right.token_out],
-                           "amount_in": left.amount, "amount_out": right.amount,
-                           "price_ratio": right.amount / left.amount if left.amount else 0.0})
+        path = [left.token_in, left.token_out]
+        amount_out = left.amount
+        current = left
+        for right in ordered[start + 1:]:
+            if right.kind != "swap" or right.sender != left.sender:
+                break
+            if right.block - current.block > max_gap_blocks or current.token_out != right.token_in:
+                break
+            path.append(right.token_out)
+            amount_out = right.amount
+            if len(path) >= 3 and path[-1] == path[0]:
+                candidates.append({"sender": left.sender, "start_block": left.block, "end_block": right.block,
+                                   "path": path.copy(), "hops": len(path) - 1,
+                                   "amount_in": left.amount, "amount_out": amount_out,
+                                   "price_ratio": amount_out / left.amount if left.amount else 0.0})
+            current = right
     return candidates
 
 def confidence(row: dict) -> float:
