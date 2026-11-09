@@ -11,6 +11,9 @@ flowchart LR
  C --> E[Precision/recall + extraction estimates]
 ```
 
+## Structural overview
+`src/mev_lab/detect.py` contains normalized transaction records, pattern classification, fixtures, and evaluation; `cli.py` prints a compact detection run; `tests/` covers labeled patterns.
+
 ## Workflow
 1. Decode transactions into a stable `(block,index)` order.
 2. Join neighboring swaps and sender/victim relationships.
