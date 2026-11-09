@@ -1,2 +1,0 @@
-[console_scripts]
-mev_detection_lab = mev_lab.cli:main
