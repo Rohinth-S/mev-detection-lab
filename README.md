@@ -1,44 +1,78 @@
 # MEV Detection & Transaction Ordering Research Lab
 
-A block-level research harness that reconstructs transaction order and applies transparent rules for arbitrage, liquidation, backrunning, and sandwich patterns. Synthetic blocks make the evaluation reproducible and safe to run offline.
+Audit the ordering and economic evidence of already-mined Ethereum transactions. The lab decodes captured receipts, reports transaction-level heuristic classifications, and compares results with independently supplied labels.
+
+## Run an audit
+
+Requires Python 3.11 or later.
+
+```bash
+python -m pip install -e '.[test]'
+mev_detection_lab --output reports/demo.json --write-input reports/normalized-demo.json
+python -m pytest -q
+```
+
+Use a stored receipt bundle or an exported normalized archive for historical investigations.
+
+```bash
+mev_detection_lab --receipts data/receipt-bundle.json \
+  --truth data/independent-labels.json --economics data/benchmarks.json \
+  --window-blocks 20 --min-confidence 0.85 --output reports/archive-audit.json
+
+mev_detection_lab --input reports/normalized-demo.json --output reports/replay.json
+```
+
+With the normalized archive, add the label and reference-price files to reproduce scored results. The built-in command supplies synthetic annotations automatically.
 
 ## Architecture
+
 ```mermaid
 flowchart LR
- L[Decoded block + logs] --> O[Order reconstruction]
- O --> R[Pattern rules]
- R --> C[Classification ledger]
- C --> E[Precision/recall + extraction estimates]
+    A["Captured mined receipts and contract allowlist"] --> B["Decode selected Uniswap and Aave event ABIs"]
+    C["Normalized transaction archive"] --> D["Block hash, identity and ordering checks"]
+    B --> D
+    D --> E["Transaction and pool evidence"]
+    E --> F["Heuristic labels and confidence threshold"]
+    L["Independent truth labels"] --> G["Confusion matrix and per-label metrics"]
+    F --> G
+    X["Independent economic benchmarks"] --> H["Gas and execution-cost evidence"]
+    F --> I["Block windows and per-transaction audit ledger"]
+    G --> I
+    H --> I
 ```
 
-## Structural overview
-`src/mev_lab/detect.py` contains normalized transaction records, pattern classification, fixtures, and evaluation; `cli.py` prints a compact detection run; `tests/` covers labeled patterns.
+| Layer | Contract and behavior |
+|---|---|
+| `archive.py` | Captures chain ID, block height/hash, transaction index/hash, sender, receipt gas and decoded events. Rejects duplicate order positions and mixed block hashes. |
+| `decoder.py` | Decodes logged ERC-20 deltas for allowlisted V3 pools and identifies allowlisted Aave V3 liquidation events. Normalizes token amounts using supplied decimals. |
+| `audit.py` | Reconstructs mined order, evaluates matching evidence, records suppressed labels and summarizes block windows. |
+| `cli.py` | Loads annotations separately, stores source provenance and writes normalized archive and audit JSON. |
 
-## Workflow
-1. Decode transactions into a stable `(block,index)` order.
-2. Join neighboring swaps and sender/victim relationships.
-3. Emit an auditable classification with the triggering rule.
-4. Compare labels against a fixture truth set.
+## Evidence and scoring
 
-## Design rationale
-Rules are explicit before any ML is introduced. This makes false positives inspectable and provides a labeled corpus for future models. Production adapters should preserve raw hashes and event topics alongside normalized fields.
+| Reported label | Observed evidence |
+|---|---|
+| `liquidation` | A decoded Aave V3 `LiquidationCall` in the mined receipt. |
+| `arbitrage` | A continuous closed token path across multiple pool events within one mined transaction. |
+| `backrun` | A closed path involving a pool also used by the preceding transaction from a different sender. |
+| `sandwich` | Related pre-trade, middle and post-trade swaps within the same pool, with same-sender outer legs and observed direction reversal. |
+| `other` | Evidence falls outside the supported patterns or below the configured confidence threshold. |
 
-## Run
-```bash
-pip install -e .
-python -m mev_lab.cli
-pytest -q
-```
+Heuristic labels are candidates for retrospective review. The output records the triggering rule, the pre-filter label and the scored result. Provide independent JSON rows of the form `{"tx_hash":"0x…","label":"other"}` to score coverage, precision, recall, F1, and false-positive and false-negative counts. Metrics use only annotated transactions. Rule confidence is a fixed heuristic score.
 
-## Live adapter boundary
-`mev_lab.rpc.JsonRpcClient` can fetch Ethereum-family logs for a block-range adapter; classification accepts normalized transactions so decoding remains a replaceable boundary.
+## Receipt and economics inputs
 
-### Credential-dependent blockers
-Live MEV research requires an archive-capable RPC and calldata/event decoders. Public endpoints may prune historical traces or rate-limit block scans.
+- A receipt bundle contains `chain_id`, `receipts` (the result objects from `eth_getTransactionReceipt`), `uniswap_v3_pools`, `aave_v3_pools` and optional `native_usd_by_block`.
+- Each Uniswap entry has `address`, `token0`, `token1`, `decimals0` and `decimals1`. Each Aave entry is a permitted Pool proxy address.
+- Gas in the native token uses receipt `gasUsed × effectiveGasPrice`. USD gas requires a block-specific native USD mark. Any additional L2 publication cost requires separate accounting.
+- An economics row can supply `gross_extraction_usd` and optionally `reference_price_usd`, `executed_price_usd`, and `side`. The report deducts observed gas when both values exist and computes signed execution shortfall against the supplied benchmark. Keep the benchmark source with the capture.
 
-## Environment
+A real Ethereum receipt captured at block 26,486,702 was decoded and audited through the archive path. External receipts for a study should cover all relevant transactions in each block, with separately audited labels and benchmarks.
 
-Copy `.env.example` and set `RPC_URL` only when a reachable provider is available. The adapters do not embed credentials and never run implicitly during tests.
+[Ethereum receipt fields](https://ethereum.org/developers/docs/apis/json-rpc/#eth_gettransactionreceipt) · [Uniswap V3 event source](https://github.com/Uniswap/v3-core/blob/main/contracts/interfaces/pool/IUniswapV3PoolEvents.sol) · [Aave V3 Pool interface](https://aave.com/docs/aave-v3/smart-contracts/pool)
 
-## Limitations
-The fixture does not model private mempools, builder policies, or multi-hop calldata semantics. Classification is research evidence, not an accusation of malicious behavior.
+## Reproduced demo results
+
+The nine-transaction synthetic archive exercises six positive detections and three controls with independent fixture labels. Detection quality on an external archive depends on available receipts, the address allowlist, and the labeling policy.
+
+![Synthetic MEV audit label counts and confusion matrix](docs/demo-results.png)
